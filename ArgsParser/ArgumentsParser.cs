@@ -53,8 +53,12 @@ namespace ArgsParser
 
                 if (!arg.HasValue)
                 {
-                    // If the argument doesn't expect a value
-                    argumentsParsed.AddParsedArgument(arg, null);
+                    if (argIndex != -1)
+                    {
+                        // If the argument doesn't expect a value
+                        argumentsParsed.AddParsedArgument(arg, null);
+                    }
+
                     continue;
                 }
                 
