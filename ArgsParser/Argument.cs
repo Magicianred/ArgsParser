@@ -35,5 +35,6 @@ namespace ArgsParser
             HasValue = hasValue;
         }
 
+        public override string ToString() => HasAlias ? $"{Name}, {Alias}" : Name;
     }
 }

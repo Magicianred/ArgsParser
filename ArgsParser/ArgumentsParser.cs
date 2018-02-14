@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 
@@ -21,22 +22,64 @@ namespace ArgsParser
 
         #region Public Methods
 
-        public Argument AddArgument(Argument argument)
+        public void AddArgument(Argument argument)
         {
             if (_arguments.ContainsKey(argument.Name))
                 throw new ArgumentException("The name of this argument is already added.");
 
             _arguments.Add(argument.Name, argument);
-            return argument;
         }
 
-        public void Parse(string[] args)
+        public ArgumentsParsed Parse(string[] args)
         {
             if (args.Contains("-h") || args.Contains("--help"))
             {
                 PrintHelp();
-                return;
+                return null;
             }
+
+            if (_arguments.Count == 0)
+                return null;
+            
+            var argumentsParsed = new ArgumentsParsed();
+
+            foreach (var arg in _arguments.Values)
+            {
+                int argIndex = Array.FindIndex(args, a => a == arg.Name || a == arg.Alias);
+                
+                // If the argument is required but wasn't found
+                if (!arg.Optional && argIndex == -1)
+                    throw new ArgumentException($"The argument '{arg}' is required.");
+
+                if (!arg.HasValue)
+                {
+                    // If the argument doesn't expect a value
+                    argumentsParsed.AddParsedArgument(arg, null);
+                    continue;
+                }
+                
+                int valueIndex = argIndex + 1;
+                    
+                // If there is no value
+                if (valueIndex == args.Length)
+                    throw new ArgumentException($"The argument '{arg}' requires a value.");
+
+                string strValue = args[valueIndex];
+                object value = null;
+
+                try
+                {
+                    value = ConvertStringToType(strValue, arg.Type);
+                }
+                catch
+                {
+                    throw new ArgumentException($"Invalid value of the argument '{arg}'.");
+                }
+
+                argumentsParsed.AddParsedArgument(arg, value);
+            }
+
+            return argumentsParsed;
         }
 
         #endregion
@@ -51,13 +94,13 @@ namespace ArgsParser
                 return;
             }
 
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             sb.AppendLine("Available arguments:");
             sb.AppendLine($"{FixedPadRight("\t-h, --help")}Shows the available arguments.");
 
-            foreach (Argument arg in _arguments.Values)
+            foreach (var arg in _arguments.Values)
             {
-                string str = $"\t{arg.Name}";
+                var str = $"\t{arg.Name}";
                 
                 if (arg.HasAlias)
                 {
@@ -80,6 +123,12 @@ namespace ArgsParser
             }
 
             Console.WriteLine(sb.ToString());
+        }
+
+        private static object ConvertStringToType(string str, Type type)
+        {
+            var converter = TypeDescriptor.GetConverter(type);
+            return converter.ConvertFromInvariantString(str);
         }
 
         private static string FixedPadRight(string str) => str.PadRight(20);

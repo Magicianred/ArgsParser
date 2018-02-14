@@ -8,7 +8,9 @@ namespace ArgsParser.Demo
         {
             var argsParser = new ArgumentsParser();
             argsParser.AddArgument(new Argument("-t", typeof(int), "--test", "A testing argument."));
-            argsParser.Parse(args);
+            var argsParsed = argsParser.Parse(args);
+            int t = argsParsed.GetArgumentValue<int>("-t");
+            Console.WriteLine(t + 10);
         }
     }
 }
